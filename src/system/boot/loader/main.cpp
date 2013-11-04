@@ -18,7 +18,7 @@
 #include "file_systems/packagefs/packagefs.h"
 
 
-//#define TRACE_MAIN
+#define TRACE_MAIN
 #ifdef TRACE_MAIN
 #	define TRACE(x) dprintf x
 #else

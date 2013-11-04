@@ -187,8 +187,10 @@ start(void *openFirmwareEntry)
 	if (boot_arch_cpu_init() != B_OK)
 		of_exit();
 
+dprintf("boot_arch_cpu_init done\n");
 	if (init_real_time_clock() != B_OK)
 		of_exit();
+dprintf("init_real_time_clock done\n");
 
 	// check for key presses once
 	sBootOptions = 0;
@@ -203,6 +205,7 @@ start(void *openFirmwareEntry)
 
 	gKernelArgs.platform_args.openfirmware_entry = openFirmwareEntry;
 
+dprintf("call main()\n");
 	main(&args);
 		// if everything goes fine, main() never returns
 

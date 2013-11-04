@@ -8,6 +8,7 @@
 #include "real_time_clock.h"
 
 #include <stdio.h>
+#include <KernelExport.h>
 
 #include <boot/kernel_args.h>
 #include <boot/stage2.h>
@@ -21,16 +22,20 @@ static int sHandle = OF_FAILED;
 status_t
 init_real_time_clock(void)
 {
+	return B_OK;
 	// find RTC
 	int rtcCookie = 0;
+dprintf("of_get_next_device(&(%d),'rtc')\n", rtcCookie);
 	if (of_get_next_device(&rtcCookie, 0, "rtc",
 			gKernelArgs.platform_args.rtc_path,
 			sizeof(gKernelArgs.platform_args.rtc_path)) != B_OK) {
 		printf("init_real_time_clock(): Found no RTC device!");
 		return B_ERROR;
 	}
+dprintf("of_get_next_device(rtc): '%s'\n", gKernelArgs.platform_args.rtc_path);
 
 	sHandle = of_open(gKernelArgs.platform_args.rtc_path);
+dprintf("of_open(rtc): %d\n", sHandle);
 	if (sHandle == OF_FAILED) {
 		printf("%s(): Could not open RTC device!\n", __func__);
 		return B_ERROR;

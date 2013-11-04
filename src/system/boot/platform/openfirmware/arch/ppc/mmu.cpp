@@ -37,7 +37,7 @@
 //#define PHYSINVAL ((void *)-1)
 #define PHYSINVAL NULL
 
-//#define TRACE_MMU
+#define TRACE_MMU
 #ifdef TRACE_MMU
 #   define TRACE(x...) dprintf(x)
 #else
@@ -48,6 +48,8 @@
 segment_descriptor sSegments[16];
 page_table_entry_group *sPageTable;
 uint32 sPageTableHashMask;
+
+static const size_t kMaxKernelSize = 0x1000000;		// 16 MB for the kernel
 
 
 // begin and end of the boot loader
@@ -485,6 +487,8 @@ extern "C" void *
 arch_mmu_allocate(void *_virtualAddress, size_t size, uint8 _protection,
 	bool exactAddress)
 {
+	dprintf("arch_mmu_allocate(%p, size %" B_PRIuSIZE ", %08x)\n",
+		_virtualAddress, size, _protection);
 	// we only know page sizes
 	size = ROUNDUP(size, B_PAGE_SIZE);
 
@@ -498,7 +502,7 @@ arch_mmu_allocate(void *_virtualAddress, size_t size, uint8 _protection,
 	// that avoids trouble in the kernel, when we decide to keep the region.
 	void *virtualAddress = _virtualAddress;
 	if (!virtualAddress)
-		virtualAddress = (void*)KERNEL_BASE;
+		virtualAddress = (void*)(KERNEL_LOAD_BASE + kMaxKernelSize);
 
 	// find free address large enough to hold "size"
 	virtualAddress = find_free_virtual_range(virtualAddress, size);
@@ -575,6 +579,7 @@ map_callback(struct of_arguments *args)
 	int length = args->Argument(2);
 	int mode = args->Argument(3);
 	int &error = args->ReturnValue(0);
+dprintf("map_callback(%p)\n", args);
 
 	// insert range in physical allocated if needed
 
@@ -842,7 +847,7 @@ arch_mmu_init(void)
 
 #if 0
 	block_address_translation bats[8];
-	getibats(bats);
+	getibats((int *)bats);
 	for (int32 i = 0; i < 8; i++) {
 		printf("page index %u, length %u, ppn %u\n", bats[i].page_index,
 			bats[i].length, bats[i].physical_block_number);
@@ -876,6 +881,21 @@ arch_mmu_init(void)
 		physicalTable = table;
 	}
 
+	// QEMU OpenBIOS
+/*
+	insert_physical_allocated_range(0xfff00000, 0x00100000);
+	insert_virtual_allocated_range(0xfff00000, 0x00100000);
+	map_range((void *)0xfff00000, (void *)0xfff00000,
+		0x00100000, PAGE_READ_WRITE);
+*/
+	// QEMU OpenBIOS PCI IO space
+
+	insert_physical_allocated_range(0x80000000, 0x04000000);
+	insert_virtual_allocated_range(0x80000000, 0x04000000);
+	map_range((void *)0x80000000, (void *)0x80000000,
+		0x04000000, PAGE_READ_WRITE);
+
+
 	if (exceptionHandlers == (void *)-1) {
 		// TODO: create mapping for the exception handlers
 		dprintf("Error: no mapping for the exception handlers!\n");
@@ -884,17 +904,45 @@ arch_mmu_init(void)
 	// Set the Open Firmware memory callback. From now on the Open Firmware
 	// will ask us for memory.
 	arch_set_callback();
+dprintf("<arch_set_callback\n");
+
+/*
+	if (!realMode) {
+		block_address_translation bat;
+
+		bat.length = BAT_LENGTH_256MB;
+		bat.kernel_valid = true;
+		bat.memory_coherent = true;
+		bat.protection = BAT_READ_WRITE;
+
+		set_ibat0(&bat);
+		set_dbat0(&bat);
+		isync();
+	}
+*/
+
+
+//	dprintf("set_msr(%08lx)\n", get_msr() &
+//		~(MSR_INST_ADDRESS_TRANSLATION | MSR_DATA_ADDRESS_TRANSLATION));
+	set_msr(get_msr() &
+		~(/*MSR_MACHINE_CHECK_ENABLED|*/MSR_INST_ADDRESS_TRANSLATION | MSR_DATA_ADDRESS_TRANSLATION));
 
 	// set up new page table and turn on translation again
 
 	for (uint32 i = 0; i < 16; i++) {
+	//for (int32 i = 15/*XXX:0*/; i > -1; i--) {
+//dprintf("ppc_set_segment_register(%d, %lx)\n", i, sSegments[i]);
 		ppc_set_segment_register((void *)(i * 0x10000000), sSegments[i]);
 			// one segment describes 256 MB of memory
 	}
 
+//dprintf("ppc_set_page_table()\n");
 	ppc_set_page_table(physicalTable, tableSize);
+//dprintf("invalidate_tlb()\n");
 	invalidate_tlb();
 
+
+/*
 	if (!realMode) {
 		// clear BATs
 		reset_ibats();
@@ -902,6 +950,7 @@ arch_mmu_init(void)
 		ppc_sync();
 		isync();
 	}
+*/
 
 	set_msr(MSR_MACHINE_CHECK_ENABLED | MSR_FP_AVAILABLE
 		| MSR_INST_ADDRESS_TRANSLATION | MSR_DATA_ADDRESS_TRANSLATION);

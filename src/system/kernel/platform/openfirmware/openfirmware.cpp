@@ -6,6 +6,7 @@
 #include <platform/openfirmware/openfirmware.h>
 
 #include <stdarg.h>
+#include <KernelExport.h>
 
 
 // OpenFirmware entry function
@@ -505,6 +506,7 @@ of_release(void *virtualAddress, int size)
 void *
 of_claim(void *virtualAddress, int size, int align)
 {
+dprintf("OF at %p\n", gCallOpenFirmware);
 	struct {
 		const char	*name;
 		int			num_args;

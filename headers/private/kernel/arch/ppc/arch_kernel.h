@@ -12,6 +12,9 @@
 #define KERNEL_SIZE 0x80000000
 #define KERNEL_TOP  (KERNEL_BASE + (KERNEL_SIZE - 1))
 
+// XXX: QEMU OpenBIOS maps IO at the default address...
+#define KERNEL_LOAD_BASE 0x82000000
+
 /*
 ** User space layout is a little special:
 ** The user space does not completely cover the space not covered by the kernel.

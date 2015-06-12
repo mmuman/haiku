@@ -1,6 +1,8 @@
 OUTPUT_FORMAT("elf32-powerpc", "elf32-powerpc", "elf32-powerpc")
 OUTPUT_ARCH(powerpc)
 
+STACK_SIZE = 16384;
+
 ENTRY(_start)
 SECTIONS
 {
@@ -30,6 +32,14 @@ SECTIONS
 	__bss_start = .;
 	.sbss : { *(.sbss .sbss.* .gnu.linkonce.sb.*) }
 	.bss : { *(.bss .bss.* .gnu.linkonce.b.*) }
+	__bss_end = .;
+
+	.stack : {
+		__stack_start = .;
+		. += STACK_SIZE;
+		. = ALIGN(0x8);
+		__stack_top = .;
+	}
 
 	. = ALIGN(0x1000);
 	_end = . ;

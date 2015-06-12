@@ -36,6 +36,8 @@ SYMBOL(_start_common):
 	stw		%r2, 0(%r12)
 	stw		%r11, gUBootOS-gUBootGlobalData(%r12)	// gUBootOS
 
+	// TODO: set up stack properly like on ARM
+
 	b		start_linux_ppc_fdt
 
 	// return
@@ -46,6 +48,7 @@ SYMBOL_END(_start_common)
 //XXX: doesn't seem to work
 //.data
 
+.global __stack_end, __stack_start
 
 SYMBOL(gUBootGlobalData):
 	.long   0

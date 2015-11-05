@@ -33,6 +33,13 @@ arch_smp_send_ici(int32 target_cpu)
 
 
 void
+arch_smp_send_multicast_ici(CPUSet& cpuSet)
+{
+	panic("called arch_smp_send_multicast_ici\n");
+}
+
+
+void
 arch_smp_send_broadcast_ici()
 {
 	panic("called arch_smp_send_broadcast_ici\n");

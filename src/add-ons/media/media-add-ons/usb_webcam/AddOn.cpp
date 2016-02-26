@@ -84,7 +84,7 @@ WebCamMediaAddOn::CountFlavors()
 status_t
 WebCamMediaAddOn::GetFlavorAt(int32 n, const flavor_info **out_info)
 {
-	PRINT((CH "(%d, ) roster %p is %" B_PRIx32 CT, n, fRoster, fInitStatus));
+	PRINT((CH "(%ld, ) roster %p is %" B_PRIx32 CT, n, fRoster, fInitStatus));
 	int32 count;
 	CamDevice* cam;
 	if (!fRoster)
@@ -93,7 +93,7 @@ WebCamMediaAddOn::GetFlavorAt(int32 n, const flavor_info **out_info)
 		return fInitStatus;
 
 	count = fRoster->CountCameras();
-	PRINT((CH ": %d cameras" CT, count));
+	PRINT((CH ": %ld cameras" CT, count));
 	if (n >= count)//(n != 0)
 		return B_BAD_INDEX;
 
@@ -103,7 +103,7 @@ WebCamMediaAddOn::GetFlavorAt(int32 n, const flavor_info **out_info)
 	if (cam && cam->FlavorInfo())
 		*out_info = cam->FlavorInfo();
 	fRoster->Unlock();
-	PRINT((CH ": returning flavor for %d, internal_id %d" CT, n, (*out_info)->internal_id));
+	PRINT((CH ": returning flavor for %ld, internal_id %ld" CT, n, (*out_info)->internal_id));
 	return B_OK;
 }
 
@@ -123,7 +123,7 @@ WebCamMediaAddOn::InstantiateNodeFor(
 	for (uint32 i = 0; i < fRoster->CountCameras(); i++) {
 		CamDevice *c;
 		c = fRoster->CameraAt(i);
-		PRINT((CH ": cam[%d]: %d, %s" CT, i, c->FlavorInfo()->internal_id, c->BrandName()));
+		PRINT((CH ": cam[%ld]: %ld, %s" CT, i, c->FlavorInfo()->internal_id, c->BrandName()));
 		if (c && (c->FlavorInfo()->internal_id == info->internal_id)) {
 			cam = c;
 			break;

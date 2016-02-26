@@ -113,7 +113,7 @@ SonixCamDevice::SonixCamDevice(CamDeviceAddon &_addon, BUSBDevice* _device)
 			const BUSBEndpoint *e = inter->EndpointAt(i);
 			if (e && e->IsBulk() && e->IsInput()) {
 				fBulkIn = e;
-				PRINT((CH ": Using inter[0].endpoint[%d]; maxpktsz: %d" CT, i, e->MaxPacketSize()));
+				PRINT((CH ": Using inter[0].endpoint[%ld]; maxpktsz: %d" CT, i, e->MaxPacketSize()));
 				break;
 			}
 		}
@@ -703,7 +703,7 @@ SonixCamDevice::GetFrameBitmap(BBitmap **bm, bigtime_t *stamp /* = NULL */)
 
 	bayer2rgb24((unsigned char *)b->Bits(), (unsigned char *)f->Buffer(), w, h);
 
-	PRINT((CH ": got 1 frame (len %d)" CT, b->BitsLength()));
+	PRINT((CH ": got 1 frame (len %d)" CT, (int)b->BitsLength()));
 	*bm = b;
 	return B_OK;
 }

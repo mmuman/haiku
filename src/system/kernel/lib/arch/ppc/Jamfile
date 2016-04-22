@@ -14,6 +14,7 @@ KernelMergeObject kernel_os_arch_$(TARGET_ARCH).o :
 	system_time_asm.S
 	system_time.c
 
+	#generic_atomic.cpp
 	generic_system_time_nsecs.cpp
 
 	: $(TARGET_KERNEL_PIC_CCFLAGS)

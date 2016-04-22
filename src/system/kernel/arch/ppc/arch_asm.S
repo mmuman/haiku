@@ -358,6 +358,124 @@ FUNCTION(ppc_kernel_thread_root):
 FUNCTION_END(ppc_kernel_thread_root)
 
 
+/* status_t arch_cpu_user_memcpy(void *to, const void *from, size_t size, addr_t *faultHandler) */
+FUNCTION(_arch_cpu_user_memcpy):
+#warning FIXME
+#if 0
+	stmfd   sp!, { r4-r6, lr }
+
+	ldr	r6, [r3]
+	ldr	r4, =.L_user_memcpy_error
+	str	r4, [r3]	/* set fault handler */
+	mov	r4, r2, lsr #2	/* size / 4 */
+1:
+	ldr	r5, [r1]
+	str	r5, [r0]
+	add	r1, #4
+	add	r0, #4
+	subs	r4, #1
+	bne	1b
+
+	ands	r4, r2, #3	/* size % 4 */
+	beq	3f
+
+2:
+	ldrb	r5, [r1]
+	strb	r5, [r0]
+	add	r1, #1
+	add	r0, #1
+	subs	r4, #1
+	bne	2b
+3:
+	str	r6, [r3]	/* restore fault handler */
+	mov	r0, #0
+	ldmfd   sp!, { r4-r6, pc }
+
+.L_user_memcpy_error:
+	str	r6, [r3]	/* restore fault handler */
+	mov	r0, #-1
+
+	ldmfd   sp!, { r4-r6, pc }
+#endif
+FUNCTION_END(_arch_cpu_user_memcpy)
+
+/* status_t arch_cpu_user_memset(void *to, char c, size_t count, addr_t *faultHandler) */
+FUNCTION(_arch_cpu_user_memset):
+#warning FIXME
+#if 0
+	stmfd   sp!, { r4-r5, lr }
+
+	ldr	r5, [r3]
+	ldr	r4, =.L_user_memset_error
+	str	r4, [r3]
+
+	and	r1, r1, #0xff
+	add	r1, r1, lsl #8
+	add	r1, r1, lsl #16
+	add	r1, r1, lsl #24
+
+	mov	r4, r2, lsr #2	/* count / 4 */
+1:
+	str	r1, [r0]
+	add	r0, r0, #4
+	subs	r4, r4, #1
+	bne	1b
+
+	and	r4, r2, #3	/* count % 4 */
+2:
+	strb	r1, [r0]
+	add	r0, r0, #1
+	subs	r4, r4, #1
+	bne	2b
+
+	mov	r0, #0
+	str	r5, [r3]
+
+	ldmfd   sp!, { r4-r5, pc }
+
+.L_user_memset_error:
+	mov	r0, #-1
+	str	r5, [r3]
+
+	ldmfd   sp!, { r4-r5, pc }
+#endif
+FUNCTION_END(_arch_cpu_user_memset)
+
+/* ssize_t arch_cpu_user_strlcpy(void *to, const void *from, size_t size, addr_t *faultHandler) */
+FUNCTION(_arch_cpu_user_strlcpy):
+#warning FIXME
+#if 0
+	stmfd   sp!, { r4-r6, lr }
+	ldr	r5, [r3]
+	ldr	r4, =.L_user_strlcpy_error
+	str	r4, [r3]
+	mov	r6, #0
+1:
+	ldrb	r4, [r1, r6]
+	strb	r4, [r0, r6]
+	add	r6, r6, #1
+	cmp	r4, #0
+	beq	2f
+	cmp	r6, r2		/* reached max length? */
+	blt	1b
+2:
+	mov	r4, #0
+	strb	r4, [r0, r6]
+
+	mov	r0, r6		/* return length */
+	str	r5, [r3]	/* restore fault handler */
+
+	ldmfd   sp!, { r4-r6, pc }
+
+.L_user_strlcpy_error:
+	mov	r0, #-1
+	str	r5, [r3]
+
+	ldmfd   sp!, { r4-r6, pc }
+#endif
+FUNCTION_END(_arch_cpu_user_strlcpy)
+
+
 /*!	\fn void arch_debug_call_with_fault_handler(cpu_ent* cpu,
 		jmp_buf jumpBuffer, void (*function)(void*), void* parameter)
 

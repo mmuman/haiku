@@ -63,7 +63,7 @@
 #include "vm/VMAnonymousCache.h"
 
 
-//#define TRACE_BOOT
+#define TRACE_BOOT
 #ifdef TRACE_BOOT
 #	define TRACE(x...) dprintf("INIT: " x)
 #else
@@ -77,9 +77,9 @@ bool gKernelStartup = true;
 bool gKernelShutdown = false;
 
 static kernel_args sKernelArgs;
-static uint32 sCpuRendezvous;
-static uint32 sCpuRendezvous2;
-static uint32 sCpuRendezvous3;
+static uint32 sCpuRendezvous = 0;
+static uint32 sCpuRendezvous2 = 0;
+static uint32 sCpuRendezvous3 = 0;
 
 static int32 main2(void *);
 

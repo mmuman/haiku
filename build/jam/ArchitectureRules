@@ -365,6 +365,16 @@ rule KernelArchitectureSetup architecture
 			# boot time is not fixed.
 			HAIKU_KERNEL_PIC_CCFLAGS = -fPIE ;
 			HAIKU_KERNEL_PIC_LINKFLAGS = -shared -fPIE ;
+			HAIKU_KERNEL_CCFLAGS += -malign-natural ;
+			HAIKU_KERNEL_C++FLAGS += -malign-natural ;
+			HAIKU_BOOT_CCFLAGS += -mno-strict-align ;
+			HAIKU_BOOT_C++FLAGS += -mno-strict-align ;
+#-malign-natural -mfloat-gprs=no -mno-mfpgpr
+#-mcpu=440fp
+#			HAIKU_KERNEL_CCFLAGS += -mcpu=750 ;
+#			HAIKU_KERNEL_C++FLAGS += -mcpu=750 ;
+#			HAIKU_KERNEL_CCFLAGS += -mcpu=G5 ;
+#			HAIKU_KERNEL_C++FLAGS += -mcpu=G5 ;
 
 		case m68k :
 			# We don't want to have to handle emulating missing FPU opcodes for

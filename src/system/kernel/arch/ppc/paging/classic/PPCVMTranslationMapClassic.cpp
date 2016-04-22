@@ -263,7 +263,9 @@ PPCVMTranslationMapClassic::ChangeASID()
 #if KERNEL_BASE != 0x80000000
 #error fix me
 #endif
-	int vsidBase = VSIDBase();
+	// XXX: volatile here prevents a gcc/gas bug on DEBUG build
+	// cf. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=37758
+	volatile int vsidBase = VSIDBase();
 
 	isync();	// synchronize context
 	asm("mtsr	0,%0" : : "g"(vsidBase));

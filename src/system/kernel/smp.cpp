@@ -29,6 +29,7 @@
 #include <spinlock_contention.h>
 #include <thread.h>
 #include <util/atomic.h>
+#include <atomic>
 #if DEBUG_SPINLOCK_LATENCIES
 #	include <safemode.h>
 #endif
@@ -1394,10 +1395,9 @@ smp_wake_up_non_boot_cpus()
 void
 smp_cpu_rendezvous(uint32* var)
 {
-	atomic_add((int32*)var, 1);
-
-	while (*var < (uint32)sNumCPUs)
-		cpu_wait((int32*)var, sNumCPUs);
+	auto& v = *reinterpret_cast<std::atomic<uint32_t>*>(var);
+	v++;
+	while (v.load() < uint32_t(sNumCPUs)) { }
 }
 
 

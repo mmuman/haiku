@@ -1,0 +1,431 @@
+/*
+ * Copyright (c) 2018 François Revol <revol@free.fr>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+/dts-v1/;
+
+/*
+ * BeBox Device Tree
+ *
+ * References:
+ * http://testou.free.fr/www.beatjapan.org/mirror/www.be.com/products/bebox/dual603spec.html
+ * [BN27] http://testou.free.fr/www.beatjapan.org/mirror/www.be.com/aboutbe/benewsletter/Issue27.html#Cookbook
+ * http://www.progettoemma.net/mess/system.php?machine=bebox2
+ * 'listarea' command in BeOS
+ * https://github.com/mamedev/mame bebox.*
+ *
+ * References (chips):
+ * https://www.nxp.com/docs/en/data-sheet/MPC603.pdf
+ *	- p. 10 : clocks, timebase
+ *	- p. 8 : cache
+ * https://www.nxp.com/docs/en/data-sheet/MPC603EC.pdf
+ * [105] https://www.nxp.com/docs/en/data-sheet/MPC105.pdf
+ * [isa] ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/doc/290571.pdf
+ * [sio] ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/doc/29048603.pdf
+ * [rtc] http://www.ti.com/lit/ds/symlink/bq3285.pdf
+ * [snd] http://web.mit.edu/afs/sipb/contrib/doc/specs/ic/audio/cs4231a.pdf
+ * [snd2] https://www.analog.com/media/en/technical-documentation/obsolete-data-sheets/1692269AD1848K.pdf
+ * [alsa] https://alsa.opensrc.org/Ad1848
+ * [midi] http://www.ti.com/lit/ds/symlink/tl16c554.pdf
+ * [ir] ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/doc/Z86E04_E08.pdf
+ *
+ * More references (bindings):
+ * https://elinux.org/Device_Tree_Usage
+ * https://www.kernel.org/doc/Documentation/devicetree/bindings/
+ * U-Boot: doc/device-tree-bindings
+ * https://www.openfirmware.info/Bindings
+ * https://github.com/andreiw/prephv/blob/master/prep.dts
+ * http://web.archive.org/web/20100224084420/playground.sun.com/1275/bindings/ppc/release/ppc-2_1.html
+ */
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	model = "be,BeBox 133";
+	/* XXX: really? */
+	compatible = "prep";
+
+	clock-frequency = <33000000>;		/*  33 MHz */ /* XXX: CHRP */
+
+	cpus {
+		#cpus = <2>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		cpu@0 {
+			device_type = "cpu";
+			model = "PowerPC,603e";
+			compatible = "PowerPC,603e", "PowerPC,603";
+			reg = <0x0>;			/* CPU ID=0x0 (bit 6 of 0x7ffff3f0) */
+			d-cache-block-size = <32>;		/* 32 bytes */
+			i-cache-block-size = <32>;		/* 32 bytes */
+			d-cache-size = <8192>;			/* L1, 8kB */
+			i-cache-size = <8192>;			/* L1, 8kB */
+			bus-frequency = <33000000>;		/*  33 MHz */
+			clock-frequency = <133000000>;	/* 133 MHz (4 * bus-frequency) */
+			timebase-frequency = <8250000>;	/*   8.25 MHz (bus-frequency / 4) */
+			/* As per OF-binding, probably not needed */
+			603-translation;
+			603-power-management;
+			/* TODO: tlb-* ? */
+		};
+		cpu@1 {
+			device_type = "cpu";
+			model = "PowerPC,603e";
+			compatible = "PowerPC,603e", "PowerPC,603";
+			reg = <0x1>;			/* CPU ID=0x1 (bit 6 of 0x7ffff3f0) */
+			d-cache-block-size = <32>;		/* 32 bytes */
+			i-cache-block-size = <32>;		/* 32 bytes */
+			d-cache-size = <8192>;			/* L1, 8kB */
+			i-cache-size = <8192>;			/* L1, 8kB */
+			bus-frequency = <33000000>;		/*  33 MHz */
+			clock-frequency = <133000000>;	/* 133 MHz (4 * bus-frequency) */
+			timebase-frequency = <8250000>;	/*   8.25 MHz (bus-frequency / 4) */
+			/* As per OF-binding, probably not needed */
+			603-translation;
+			603-power-management;
+			/* TODO: tlb-* ? */
+		};
+	};
+
+	memory@0 {
+		device_type = "memory";
+		 /* 128MB, 256MB max; fixed by haiku_loader (passed by ROM at 0x3010) */
+		reg = <0x00000000 0x8000000>;
+	};
+
+	/* motherboard-regs@0x40000000 */
+	// BeOS R5 maps 1 page there.
+	/*motherboard-io@7ffff000 {
+	};*/
+
+	/* custom interrupt controller */
+	beic: interrupt-controller@7ffff0f0 {
+		device_type = "interrupt-controller";
+		#interrupt-cells = <2>;
+		compatible = "be,bebox-ic";
+		interrupt-controller;
+		// XXX: MAME sources imply they are 8 bytes wide!?
+		reg = <0x7ffff0f0 0x4
+			   0x7ffff1f0 0x4
+			   0x7ffff2f0 0x4
+			   0x7ffff3f0 0x4
+			   0x7ffff4f0 0x4>;
+		//reserved-interrupts = <2>;
+	};
+
+
+	/* actually a PCI-ISA bridge, but ISA I/O is separated */
+	// ISA bridge is an i82378
+	isa@80000000 {
+		device_type = "isa";
+		#address-cells = <2>;
+		#size-cells = <1>;
+		compatible = "pciclass,0601", // XXX: not really, and not really mapped through PCI ???
+					 "isa";
+		ranges = <0x00000001 0x00000000 0x80000000 0x00800000	// I/O
+				  0x00000000 0x00000000 0xc0000000 0x3f000000>;	// PCI memory XXX: not sure at all. "The BeBox does not use any ISA memory locations;"
+		interrupt-parent = <&i8259>; // XXX: actually both i8259 & beic can be used
+		dma-controller@0 {
+			compatible = "pnpPNP,200";
+			reg = <1 0x00000000 0x20
+				   1 0x00000080 0x10
+				   1 0x000000c0 0x20>;
+		};
+		i8259: interrupt-controller@20 {
+			device_type = "interrupt-controller";
+			#interrupt-cells = <2>;
+			compatible = "pnpPNP,000", "chrp,iic";
+			interrupt-controller;
+			reg = <1 0x00000020 0x2
+				   1 0x000000a0 0x2
+				   1 0x000004d0 0x2>;
+			reserved-interrupts = <2>;
+		};
+		timer@40 {
+			compatible = "pnpPNP,100";
+			reg = <1 0x00000040 0x20>;
+		};
+		8042@60 {
+			device_type = "8042";
+			compatible = "pnpPNP,100", "chrp,8042", "intel,i8042-keyboard";
+			reg = <1 0x00000060 0x1
+				   1 0x00000064 0x1>;
+			interrupts = <1 3 12 3>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			keyboard@0 {
+				device_type = "keyboard";
+				compatible = "pnpPNP,303";
+				reg = <0>;
+			};
+			mouse@1 {
+				device_type = "mouse";
+				compatible = "pnpPNP,f03";
+				reg = <1>;
+			};
+		};
+		rtc@70 {
+			device_type = "rtc";
+			compatible = "ti,bq3285", "dallas,ds1285", "motorola,mc146818";
+			reg = <1 0x00000070 0x2>;
+			interrupt-parent = <&i8259>;
+			interrupts = <8 3>; // XXX: edge or level ??
+			// XXX: is it the right place?
+			// no ranges (indexed addressing)
+			#address-cells = <1>;
+			#size-cells = <1>;
+			nvram@e {
+				device_type = "nvram";
+				#bytes = <114>;
+				reg = <0x0e 114>;
+			};
+		};
+		ide@1f0 {
+			device_type = "ide"; // XXX ?
+			compatible = "pnpPNP,a000";
+			// MAME sources puts another at 3f0!?
+			reg = <1 0x000001f0 0x8>;
+			interrupts = <14 3>; // XXX: edge or level ??
+			// TODO: dma
+		};
+		gameport@201 {
+			device_type = "gameport";
+			compatible = "pc,gameport";
+			reg = <1 0x00000201 0x1>; // Chip Select
+		};
+		// 82091 (Super I/O) config regs
+		superio@26e {
+			//device_type = "superio";
+			compatible = "intel,82091aa";
+			reg = <1 0x0000026e 0x2
+				   1 0x00000398 0x2>;
+		};
+		fdc@370 {
+			device_type = "fdc";
+			compatible = "pnpPNP,700"; // not "chrp,fdc" (no auto-eject)
+			// XXX: MAME sayz 3f0...
+			reg = <1 0x00000370 0x8>;
+			interrupts = <6 3>; // XXX: edge or level ??
+			// TODO: dma
+			#address-cells = <1>;
+			#size-cells = <0>;
+			disk@0 {
+				device_type = "block";
+				reg = <0x0>;
+			};
+		};
+		parallel@3bc {
+			device_type = "parallel";
+			compatible = "chrp,ecp", "pc,parallel";
+			reg = <1 0x000003bc 0x4>;	// XXX: OF bindings say it must be 8 bytes
+			interrupts = <7 3>; // XXX: edge or level ??
+			// TODO: dma
+		};
+		// first 2 ports are in the 82091 (Super I/O), 4 next are in a 16550.
+		serial1: serial@3f8 {
+			device_type = "serial";
+			compatible = "pnpPNP,501","pnpPNP,500","ns16550";
+			reg = <1 0x000003f8 0x8>;
+			interrupts = <4 3>;
+			clock-frequency = <1843200>; // XXX: default
+			current-speed = <19200>;
+		};
+		serial2: serial@2f8 {
+			device_type = "serial";
+			compatible = "pnpPNP,501","pnpPNP,500","ns16550";
+			reg = <1 0x000002f8 0x8>;
+			interrupts = <3 3>;
+			clock-frequency = <1843200>; // XXX
+			current-speed = <19200>;
+		};
+		// IRQs for serial3&4 & midi are only on <&beic>
+		serial3: serial@380 {
+			device_type = "serial";
+			compatible = "ti,tl16c554", "ti,tl16554", "pnpPNP,501","pnpPNP,500","ns16550"; // XXX
+			reg = <1 0x00000380 0x8>;
+			//interrupts = <4 3>;
+			//clock-frequency = <XXX>; // TODO: find clock for com3 & 4 (MIDI)
+			current-speed = <19200>;
+		};
+		dbgout: serial4: serial@388 {
+			device_type = "serial";
+			compatible = "ti,tl16c554", "ti,tl16554", "pnpPNP,501","pnpPNP,500","ns16550"; // XXX
+			reg = <1 0x00000388 0x8>;
+			//interrupts = <4 3>;
+			//clock-frequency = <XXX>; // TODO: find clock for com3 & 4 (MIDI)
+			current-speed = <19200>;
+		};
+		midi1: serial@3a0 {
+			device_type = "serial";
+			compatible = "ti,tl16c554", "ti,tl16554", "pnpPNP,501","pnpPNP,500","ns16550"; // XXX
+			reg = <1 0x000003a0 0x8>;
+			//interrupts = <4 3>;
+			//clock-frequency = <XXX>; // TODO: find clock for com3 & 4 (MIDI)
+			//current-speed = <XXX>;
+		};
+		midi2: serial@3a8 {
+			device_type = "serial";
+			compatible = "ti,tl16c554", "ti,tl16554", "pnpPNP,501","pnpPNP,500","ns16550"; // XXX
+			reg = <1 0x000003a8 0x8>;
+			//interrupts = <4 3>;
+			//clock-frequency = <XXX>; // TODO: find clock for com3 & 4 (MIDI)
+			//current-speed = <XXX>;
+		};
+
+		geekport {
+			ranges; //XXX
+			/*
+			GeekPort A/D Control               80000360-1
+			GeekPort A/D Data                  80000362-3
+			GeekPort A/D Rate                  80000364
+			*/
+		};
+		sound@830 {
+			device_type = "sound";
+			compatible = "cirrus,cs4231a", "ad,ad1848", "pnpPNP,b007";
+			//XXX clock-frequency = <400000>;
+			reg = <1 0x00000830 0x4>;
+			// TODO: interrupts = < 3>; // &beic bit 14
+			// TODO: dma;
+			#input-channels = <>;
+			#output-channels = <>;
+			sample-precisions = <>;
+			input-frame-rates = <>;
+			output-frame-rates = <>;
+			input-encoding-types = <>;
+			output-encoding-types = <>;
+		};
+	//TODO:
+/*
+		// 3 IR ports
+		ir@368 {
+			device_type = "ir"; //XXX: serial ?
+			// it's a microcontroller actually... compatible = "zilog,z86c04";
+		};
+		// some more:
+		// - front-panel (leds)
+		// geekport (GPIO + ADC + DAC) 37pin sub-D
+*/
+
+
+		// NE2000 compatible ISA network card
+		ethernet@300 {
+			device_type = "ethernet";
+			compatible = "ne2000";
+			reg = <1 0x00000300 0x20>; // XXX: how large?
+			interrupts = <5 3>;
+		};
+	};
+
+	// PCI bridge is an MPC 105
+	// XXX: [BN27] says PCI I/O is separate from ISA I/O,
+	// but actual area dumps from a real BeBox seems to show otherwise.
+	pci@81000000 {
+		device_type = "pci";
+		#interrupt-cells = <1>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		compatible = "fsl,mpc105", "nxp,mpc105", "prep-pci", "pci"; // XXX: not sure about names here
+		bus-frequency = <33000000>;		/*  33 MHz */
+		//reg = TODO: find controller regs
+		bus-range = <0 0xff>;
+		ranges = <0x02000000 0 0xc0000000 0xc0000000 0 0x3f000000	// memory
+				  0x01000000 0 0x81000000 0x81000000 0 0x3e800000>;	// I/O
+		/* expose system memory to PCI devices */
+		dma-ranges = <0x42000000 0 0 0 0 0 0x10000000>;
+		//TODO: interrupt-map*
+
+	};
+
+	/* irqack@BFFFFFF0 */
+
+	flash@fff00000 {
+		device_type = "flash";
+		compatible = "rom", "flash"; // XXX
+		//reg = <0xff000000 0x1000000>;
+		//reg = <0xff000000 0x20000>; // 128kB
+		reg = <0xfff00000 0x100000>;
+	};
+
+/*
+	display {
+		// XXX: it actually should be a PCI node as it's a VGA card there.
+		// XXX: CHRP bindings defines "linear framebuffer"...
+		// but miss an address field...
+		// it also mandates 8-bits per pixel.
+		device_type = "display";
+		compatible = "chrp,lfb", "pnpPNP,900"; // 900 = VGA
+		//reg = ;
+		height = <480>;
+		width = <640>;
+		linebytes = <640>;
+	};
+ */
+
+	aliases {
+		serial1 = &serial1;
+	};
+
+	/* XXX: needed? seemed used on PReP for NT boot args */
+	options {
+		/* bootitems passed by ROM at 0x301C */
+		//boot_config_dev = "";
+		//boot_kernel_dev = "";
+		//boot_kernel_name = "";
+		//debug_output;
+	};
+
+	chosen {
+		//XXX
+		bootargs = "";
+		//stdin = "serial1";
+		//stdout = "serial1";
+		// XXX: seems the bootrom doesn't care about
+		// the speed in kernel config file and uses 19200.
+		stdout-path = "/isa@80000000/serial@3f8:19200n8";
+		//serial0 = "/isa@80000000/serial@3f8:115200n8";
+		//console = "/isa@80000000/serial@3f8:115200n8";
+
+		// required for the framebuffer reg
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		framebuffer0: framebuffer@c1000000 {
+			// XXX: it actually should be a PCI node as it's a VGA card there.
+			// XXX: CHRP bindings defines "linear framebuffer"...
+			// but miss an address field...
+			// it also mandates 8-bits per pixel.
+			// Linux has a simple-framebuffer but doesn't know about 8bpp
+			device_type = "simple-framebuffer";
+			compatible = "simple-framebuffer";
+			reg = <0xc1000000 (640 * 480)>; // XXX: loader should parse PCI bootitem to FIXUP!
+			height = <480>;
+			width = <640>;
+			stride = <640>;
+			format = "p8";
+		};
+
+	};
+};

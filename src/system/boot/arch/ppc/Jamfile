@@ -1,33 +1,48 @@
 SubDir HAIKU_TOP src system boot arch ppc ;
 
-{
-	local defines = _BOOT_MODE ;
+local platform ;
+for platform in [ MultiBootSubDirSetup bebox openfirmware ] {
+	on $(platform) {
+		DEFINES += _BOOT_MODE ;
 
-	defines = [ FDefines $(defines) ] ;
-	SubDirCcFlags $(defines) ;
-	SubDirC++Flags $(defines) -fno-rtti ;
+		local kernelArchGenericSources =
+			debug_uart_8250.cpp
+		;
+
+		local kernelArchSources =
+			arch_uart_8250.cpp
+			arch_elf.cpp
+		;
+
+		# local kernelLibArchSources = arch_string.S ;
+
+		local librootOsArchSources =
+			byteorder.S
+		;
+
+		local librootStringGenericSources =
+			memcpy.c
+			memset.c
+		;
+
+		BootMergeObject [ FGristFiles boot_arch_$(TARGET_KERNEL_ARCH).o ] :
+			$(kernelArchGenericSources)
+			$(kernelArchSources)
+			# $(kernelLibArchSources)
+			$(librootOsArchSources)
+			$(librootStringGenericSources)
+			: -std=c++11 # additional flags
+		;
+
+		SEARCH on [ FGristFiles $(kernelArchGenericSources) ]
+			= [ FDirName $(HAIKU_TOP) src system kernel arch generic ] ;
+		SEARCH on [ FGristFiles $(kernelArchSources) ]
+			= [ FDirName $(HAIKU_TOP) src system kernel arch ppc ] ;
+		#SEARCH on [ FGristFiles $(kernelLibArchSources) ]
+		#	= [ FDirName $(HAIKU_TOP) src system kernel lib arch ppc ] ;
+		SEARCH on [ FGristFiles $(librootOsArchSources) ]
+			= [ FDirName $(HAIKU_TOP) src system libroot os arch ppc ] ;
+		SEARCH on [ FGristFiles $(librootStringGenericSources) ]
+			= [ FDirName $(HAIKU_TOP) src system libroot posix string arch generic ] ;
+	}
 }
-
-
-local kernelLibArchObjects =
-	<src!system!kernel!lib!arch!$(TARGET_ARCH)>byteorder.o
-	<src!system!kernel!lib!arch!$(TARGET_ARCH)>memcpy.o
-	<src!system!kernel!lib!arch!$(TARGET_ARCH)>memset.o
-;
-
-BootMergeObject boot_arch_$(TARGET_KERNEL_ARCH).o :
-	debug_uart_8250.cpp
-	arch_uart_8250.cpp
-	arch_elf.cpp
-	: # additional flags
-	:
-	$(kernelArchObjects)
-	$(kernelLibArchObjects)
-;
-
-SEARCH on [ FGristFiles arch_elf.cpp arch_uart_8250.cpp ]
-    = [ FDirName $(HAIKU_TOP) src system kernel arch $(TARGET_KERNEL_ARCH) ] ;
-
-SEARCH on [ FGristFiles debug_uart_8250.cpp ]
-	= [ FDirName $(HAIKU_TOP) src system kernel arch generic ] ;
-

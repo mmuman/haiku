@@ -8,6 +8,8 @@ SubDirC++Flags -D_BOOT_MODE -fno-rtti ;
 local platform ;
 for platform in [ MultiBootSubDirSetup ] {
 	on $(platform) {
+		UsePrivateHeaders [ FDirName kernel boot platform $(platform:G=) ] ;
+
 		BootStaticLibrary boot_platform_generic_$(platform:G=) :
 			text_menu.cpp
 			video_blit.cpp

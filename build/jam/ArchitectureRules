@@ -240,7 +240,7 @@ rule KernelArchitectureSetup architecture
 	switch $(cpu) {
 		case ppc :
 			HAIKU_KERNEL_PLATFORM ?= openfirmware ;
-			HAIKU_BOOT_TARGETS += openfirmware ;
+			HAIKU_BOOT_TARGETS += bebox openfirmware ;
 
 			HAIKU_BOOT_FLOPPY_IMAGE_SIZE = 1440 ; # in kB
 			# offset in floppy image (>= sizeof(haiku_loader))
@@ -336,9 +336,9 @@ rule KernelArchitectureSetup architecture
 	}
 
 	# private kernel headers to be used when compiling kernel code
+		# [ PrivateHeaders kernel/platform/$(HAIKU_KERNEL_PLATFORM) ]
 	HAIKU_PRIVATE_KERNEL_HEADERS =
-		[ PrivateHeaders $(DOT) kernel libroot shared
-			kernel/boot/platform/$(HAIKU_KERNEL_PLATFORM) ]
+		[ PrivateHeaders $(DOT) kernel libroot shared ]
 		[ ArchHeaders $(HAIKU_KERNEL_ARCH) ]
 		[ FDirName $(HAIKU_COMMON_DEBUG_OBJECT_DIR_$(architecture)) system
 			kernel ]

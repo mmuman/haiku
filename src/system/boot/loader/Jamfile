@@ -15,6 +15,8 @@ local platform ;
 for platform in [ MultiBootSubDirSetup ] {
 	on $(platform) {
 		{
+			UsePrivateHeaders [ FDirName kernel boot platform $(platform:G=) ] ;
+
 			DEFINES = $(defines) ;
 
 			DEFINES +=

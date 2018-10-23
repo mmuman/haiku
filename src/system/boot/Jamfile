@@ -5,6 +5,25 @@ DEFINES += _BOOT_MODE ;
 UsePrivateHeaders [ FDirName libroot locale ] ;
 
 #
+# PEF haiku_loader creation
+#
+rule BuildPefLoader {
+	local pefLoader = $(1) ;
+	local bootLoader = $(2) ;
+	PEF_FORMAT on $(pefLoader) = pef ;
+
+	Depends $(pefLoader) : $(bootLoader) ;
+	MakeLocateDebug $(pefLoader) ;
+}
+
+actions BuildPefLoader {
+	rm -f $(1)
+	# copy to PEF format
+	$(TARGET_OBJCOPY_$(TARGET_PACKAGING_ARCH)) -O $(PEF_FORMAT) $(2) $(1)
+	#$(CP) $(2) $(1)
+}
+
+#
 # Coff haiku_loader creation
 #
 rule BuildCoffLoader {
@@ -212,6 +231,9 @@ for platform in [ MultiBootSubDirSetup ] {
 
 			case openfirmware :
 				BuildCoffLoader haiku_loader.$(TARGET_BOOT_PLATFORM) : boot_loader_$(TARGET_BOOT_PLATFORM) ;
+
+			case bebox :
+				BuildPefLoader haiku_loader.$(TARGET_BOOT_PLATFORM) : boot_loader_$(TARGET_BOOT_PLATFORM) ;
 
 			case u-boot :
 				local loader_entry = `printf \"obase=16;ibase=16;10 + %x\\n\" $(HAIKU_BOOT_LOADER_BASE)|bc` ;

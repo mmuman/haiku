@@ -11,6 +11,7 @@ SubDirC++Flags -fno-rtti $(defines) ;
 local platform ;
 for platform in [ MultiBootSubDirSetup ] {
 	on $(platform) {
+		UsePrivateHeaders [ FDirName kernel boot platform $(TARGET_BOOT_PLATFORM) ] ;
 		BootStaticLibrary [ MultiBootGristFiles boot_fatfs ] :
 			fatfs.cpp
 			Volume.cpp

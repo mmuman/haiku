@@ -391,6 +391,9 @@ for platform in [ MultiBootSubDirSetup ] {
 			case riscv :
 				BuildBiosLoader haiku_loader.$(TARGET_BOOT_PLATFORM) : boot_loader_$(TARGET_BOOT_PLATFORM) ;
 
+			case mac_m68k :
+				BuildBiosLoader haiku_stage1.$(TARGET_BOOT_PLATFORM) : boot_loader_$(TARGET_BOOT_PLATFORM) ;
+
 			case next_m68k :
 				BuildAoutLoader haiku_loader.$(TARGET_BOOT_PLATFORM) : boot_loader_$(TARGET_BOOT_PLATFORM) ;
 

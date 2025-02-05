@@ -33,12 +33,41 @@ ssize_t
 UVCDeframer::Write(const void* buffer, size_t size)
 {
 	const uint8* buf = (const uint8*)buffer;
-	int payloadSize = size - buf[0]; // total length - header length
+	int payloadSize = size;// - buf[0]; // total length - header length
+	int headerSize = 0;
+
+	// check if we really have a header
+	printf("buf[0] %02x\n", buf[0]);
+	if ((size > 2) && (buf[0] > 1) && (buf[0] <= 12) && (buf[0] <= size)) {
+		int expectedLen = 2;
+		if (buf[1] & (1 << 2))
+			expectedLen += 4; // PTS
+		if (buf[1] & (1 << 3))
+			expectedLen += 6; // SCR
+		// header length match the flags, reserved bit is 0
+		if ((buf[0] == expectedLen) && !(buf[1] & 1 << 4)) {
+			// Seems like a valid header
+			headerSize = buf[0];
+			payloadSize -= buf[0];
+			printf("Got %d bytes header.\n", headerSize);
+			if (buf[1] & (1 << 2)) {
+				;// TODO: use Presentation Time Stamp
+			}
+			if (buf[1] & (1 << 3)) {
+				;// TODO: use Source Clock Reference
+			}
+		}
+	}
 	
 	// This packet is just a header
-	if (size == buf[0])
+	if (headerSize && (size == buf[0]))
 		return 0;
-	
+
+	printf("Got %d bytes payload.\n", payloadSize);
+	// Should not happen
+	if (payloadSize < 0)
+		return 0;
+
 	// Allocate frame
 	if (!fCurrentFrame) {
 		BAutolock l(fLocker);
@@ -51,14 +80,15 @@ UVCDeframer::Write(const void* buffer, size_t size)
 	}
 	
 	// Write payload to buffer
-	fInputBuffer.Write(&buf[buf[0]], payloadSize);
+	fInputBuffer.Write(&buf[headerSize], payloadSize);
 	
 	// If end of frame add frame to list of frames
-	if ((buf[1] & 2) || (buf[1] & 1) != fID) {
+	if (headerSize && ((buf[1] & 2) || (buf[1] & 1) != fID)) {
 		fID = buf[1] & 1;
 		fFrameCount++;
 		buf = (uint8*)fInputBuffer.Buffer();
 		fCurrentFrame->Write(buf, fInputBuffer.BufferLength());
+		BAutolock l(fLocker);
 		fFrames.AddItem(fCurrentFrame);
 		release_sem(fFrameSem);
 		fCurrentFrame = NULL;

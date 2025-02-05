@@ -837,7 +837,7 @@ VideoWindow::_UploadClientChanged()
 	fServerName->SetEnabled(enableServerControls);
 	fLoginId->SetEnabled(enableServerControls);
 	fPassword->SetEnabled(enableServerControls);
-	fDirectory->SetEnabled(enableServerControls);
+	fDirectory->SetEnabled(true);
 	fPassiveFtp->SetEnabled(enableServerControls);
 }
 

@@ -144,6 +144,7 @@ private:
 			BBitmap*			fFtpBitmap;
 			volatile bool		fTimeToFtp;
 			volatile bool		fFtpComplete;
+			bigtime_t			fNextFtp;
 
 			bigtime_t			fRate;
 			uint32				fImageFormat;

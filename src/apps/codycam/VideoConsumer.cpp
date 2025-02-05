@@ -67,6 +67,7 @@ VideoConsumer::VideoConsumer(const char* name, BView* view,
 	fBuffers(NULL),
 	fTimeToFtp(false),
 	fFtpComplete(true),
+	fNextFtp(system_time()),
 	fRate(1000000),
 	fImageFormat(0),
 	fTranslator(0),
@@ -229,17 +230,6 @@ VideoConsumer::HandleMessage(int32 message, const void* data, size_t size)
 			strcpy(fLoginText, info->loginText);
 			strcpy(fPasswordText, info->passwordText);
 			strcpy(fDirectoryText, info->directoryText);
-			// remove old user events
-			EventQueue()->FlushEvents(TimeSource()->Now(),
-				BTimedEventQueue::B_ALWAYS, true,
-				BTimedEventQueue::B_USER_EVENT);
-			if (fRate != B_INFINITE_TIMEOUT) {
-				// if rate is not "Never," push an event
-				// to restart captures 5 seconds from now
-				media_timed_event event(TimeSource()->Now() + 5000000,
-					BTimedEventQueue::B_USER_EVENT);
-				EventQueue()->AddEvent(event);
-			}
 			break;
 	}
 
@@ -545,14 +535,6 @@ VideoConsumer::HandleEvent(const media_timed_event* event, bigtime_t lateness,
 
 		case BTimedEventQueue::B_USER_EVENT:
 			PROGRESS("VideoConsumer::HandleEvent - USER EVENT\n");
-			if (RunState() == B_STARTED) {
-				fTimeToFtp = true;
-				PROGRESS("Pushing user event for %.4f, time now %.4f\n",
-					(event->event_time + fRate) / M1, event->event_time/M1);
-				media_timed_event newEvent(event->event_time + fRate,
-					BTimedEventQueue::B_USER_EVENT);
-				EventQueue()->AddEvent(newEvent);
-			}
 			break;
 
 		case BTimedEventQueue::B_HANDLE_BUFFER:
@@ -573,6 +555,11 @@ VideoConsumer::HandleEvent(const media_timed_event* event, bigtime_t lateness,
 					// no, buffers belong to consumer
 					fOurBuffers = false;
 					index = 0;
+				}
+
+				if (fRate != B_INFINITE_TIMEOUT && system_time() > fNextFtp) {
+					fTimeToFtp = true;
+					fNextFtp = system_time() + fRate;
 				}
 
 				if (fFtpComplete && fTimeToFtp) {

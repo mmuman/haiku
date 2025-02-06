@@ -19,7 +19,7 @@
 UVCDeframer::UVCDeframer(CamDevice* device)
 	: CamDeframer(device),
 	fFrameCount(0),
-	fID(0)
+	fID(2)
 {
 }
 
@@ -37,7 +37,7 @@ UVCDeframer::Write(const void* buffer, size_t size)
 	int headerSize = 0;
 
 	// check if we really have a header
-	printf("buf[0] %02x\n", buf[0]);
+	//printf("buf: %02x %02x\n", buf[0], buf[1]);
 	if ((size > 2) && (buf[0] > 1) && (buf[0] <= 12) && (buf[0] <= size)) {
 		int expectedLen = 2;
 		if (buf[1] & (1 << 2))
@@ -49,7 +49,7 @@ UVCDeframer::Write(const void* buffer, size_t size)
 			// Seems like a valid header
 			headerSize = buf[0];
 			payloadSize -= buf[0];
-			printf("Got %d bytes header.\n", headerSize);
+			//printf("Got %d bytes header.\n", headerSize);
 			if (buf[1] & (1 << 2)) {
 				;// TODO: use Presentation Time Stamp
 			}
@@ -59,11 +59,7 @@ UVCDeframer::Write(const void* buffer, size_t size)
 		}
 	}
 	
-	// This packet is just a header
-	if (headerSize && (size == buf[0]))
-		return 0;
-
-	printf("Got %d bytes payload.\n", payloadSize);
+	//printf("Got %d bytes payload.\n", payloadSize);
 	// Should not happen
 	if (payloadSize < 0)
 		return 0;
@@ -78,21 +74,33 @@ UVCDeframer::Write(const void* buffer, size_t size)
 			return size;
 		}
 	}
-	
-	// Write payload to buffer
-	fInputBuffer.Write(&buf[headerSize], payloadSize);
-	
 	// If end of frame add frame to list of frames
 	if (headerSize && ((buf[1] & 2) || (buf[1] & 1) != fID)) {
+		// end of frame
+		if (buf[1] & 2) {
+			printf("				EOF\n");
+			// Write last payload to buffer
+			fInputBuffer.Write(&buf[headerSize], payloadSize);
+			payloadSize = 0;
+		}
 		fID = buf[1] & 1;
-		fFrameCount++;
-		buf = (uint8*)fInputBuffer.Buffer();
-		fCurrentFrame->Write(buf, fInputBuffer.BufferLength());
-		BAutolock l(fLocker);
-		fFrames.AddItem(fCurrentFrame);
-		release_sem(fFrameSem);
-		fCurrentFrame = NULL;
+		if (fInputBuffer.BufferLength()) {
+			//printf("				BUF\n");
+			fFrameCount++;
+			fCurrentFrame->Write((uint8*)fInputBuffer.Buffer(),
+				fInputBuffer.BufferLength());
+			fInputBuffer.SetSize(0);
+			fInputBuffer.Seek(0L, SEEK_SET);
+			BAutolock l(fLocker);
+			fFrames.AddItem(fCurrentFrame);
+			printf("				F %d\n", (int)fFrames.CountItems());
+			release_sem(fFrameSem);
+			fCurrentFrame = NULL;
+		}
 	}
+
+	// Write payload to buffer
+	fInputBuffer.Write(&buf[headerSize], payloadSize);
 
 	return size;
 }

@@ -188,6 +188,9 @@ CamDevice::StopTransfer()
 	wait_for_thread(fPumpThread, &err);
 	fLocker.Lock();
 
+	if (fDeframer)
+		while (fDeframer->DropFrame() == B_OK);
+
 	return B_OK;
 }
 
@@ -296,7 +299,7 @@ status_t
 CamDevice::WaitFrame(bigtime_t timeout)
 {
 	if (fDeframer)
-		return WaitFrame(timeout);
+		return fDeframer->WaitFrame(timeout);
 	return EINVAL;
 }
 
@@ -583,7 +586,7 @@ CamDevice::DataPumpThread()
 				numPacketDescriptors);
 #endif
 
-			//PRINT((CH ": got %d bytes" CT, len));
+			//PRINT((CH ": got %d bytes" CT, (int)len));
 #ifdef DEBUG_WRITE_DUMP
 			write(fDumpFD, fBuffer, len);
 #endif
@@ -592,7 +595,7 @@ CamDevice::DataPumpThread()
 				lseek(fDumpFD, 0LL, SEEK_SET);
 #endif
 
-			if (len <= 0) {
+			if (len < 0) {
 				PRINT((CH ": IsoIn: %s" CT, strerror(len)));
 				continue;
 			}

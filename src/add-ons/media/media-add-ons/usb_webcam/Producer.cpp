@@ -45,9 +45,9 @@
 
 #include "Producer.h"
 
-//#define FIELD_RATE 30.f
+#define FIELD_RATE 30.f
 //#define FIELD_RATE 29.97f
-#define FIELD_RATE 5.f
+//#define FIELD_RATE 5.f
 
 
 int32 VideoProducer::fInstances = 0;
@@ -916,8 +916,8 @@ VideoProducer::FrameGenerator()
 		PRINT(("PS: %" B_PRIdBIGTIME "\n", fProcessingLatency));
 
 		/* Drop frame if it's at least a frame late */
-		if (wait_until < system_time())
-			continue;
+		//if (wait_until < system_time())
+		//	continue;
 
 		PRINTF(1, ("FrameGenerator: wait until %" B_PRIdBIGTIME ", "
 			"%ctimed out, %crunning, %cenabled.\n",
@@ -992,6 +992,7 @@ VideoProducer::FrameGenerator()
 		if (err < B_OK) {
 			;//XXX handle error
 			fStats[0].missed++;
+			printf("FillFrameBuffer: %s\n", strerror(err));
 		}
 //#endif
 #ifdef UseGetFrameBitmap

@@ -9,8 +9,10 @@
 #include "UVCCamDevice.h"
 #include "UVCDeframer.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
+#include <SupportDefs.h>
 #include <ParameterWeb.h>
 #include <media/Buffer.h>
 
@@ -1247,7 +1249,7 @@ status_t
 UVCCamDevice::FillFrameBuffer(BBuffer* buffer, bigtime_t* stamp)
 {
 	memset(buffer->Data(), 0, buffer->SizeAvailable());
-	status_t err = fDeframer->WaitFrame(2000000);
+	status_t err = fDeframer->WaitFrame(20000);
 	if (err < B_OK) {
 		fprintf(stderr, "WaitFrame: %" B_PRIx32 "\n", err);
 		return err;
@@ -1259,17 +1261,23 @@ UVCCamDevice::FillFrameBuffer(BBuffer* buffer, bigtime_t* stamp)
 		fprintf(stderr, "GetFrame: %" B_PRIx32 "\n", err);
 		return err;
 	}
+	off_t sz;
+	f->GetSize(&sz);
+	fprintf(stderr, "GetFrame: got %d\n", (int)sz);
 
 	long int w = (long)(VideoFrame().right - VideoFrame().left + 1);
 	long int h = (long)(VideoFrame().bottom - VideoFrame().top + 1);
 
-	if (buffer->SizeAvailable() >= (size_t)w * h * 4) {
+	if (false && buffer->SizeAvailable() >= (size_t)w * h * 4) {
 		// TODO: The Video Producer only outputs B_RGB32.  This is OK for most
 		// applications.  This could be leveraged if applications can
 		// consume B_YUV422.
 		_DecodeColor((unsigned char*)buffer->Data(),
 			(unsigned char*)f->Buffer(), w, h);
 	}
+	if (true)
+		memcpy((unsigned char*)buffer->Data(),
+			(unsigned char*)f->Buffer(), std::min(buffer->SizeAvailable(), (size_t)sz));
 	delete f;
 	return B_OK;
 }
